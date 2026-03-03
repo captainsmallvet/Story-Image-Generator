@@ -38,6 +38,7 @@ const TEXT_REASONING_MODELS = [
   { id: 'gemini-3-pro-preview', name: 'Gemini 3.0 Pro' },
   { id: 'gemini-3-flash-preview', name: 'Gemini 3.0 Flash (Fast)' },
   { id: 'gemini-flash-latest', name: 'Gemini Flash Latest' },
+  { id: 'gemini-flash-lite-latest', name: 'Gemini Flash Lite Latest' },
   { id: 'gemini-3.1-flash-lite-preview', name: 'Gemini 3.1 Flash Lite' }
 ];
 
