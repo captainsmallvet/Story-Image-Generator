@@ -28,9 +28,12 @@ const STYLE_DETAILS: Record<string, string> = {
 };
 
 const IMAGE_MODELS = [
+  { id: 'gemini-3.1-flash-image-preview', name: 'Gemini 3.1 Flash Image (High Quality)' },
+  { id: 'gemini-3-pro-image-preview', name: 'Gemini 3.0 Pro Image (Premium)' },
   { id: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image (Standard)' },
-  { id: 'gemini-3-pro-image-preview', name: 'Gemini 3 Pro Image (Premium - 1K)' },
-  { id: 'imagen-4.0-generate-001', name: 'Imagen 4.0 (High Quality)' }
+  { id: 'imagen-4.0-generate-001', name: 'Imagen 4.0' },
+  { id: 'gemini-flash-image-latest', name: 'Gemini Flash Image Latest' },
+  { id: 'gemini-pro-image-latest', name: 'Gemini Pro Image Latest' }
 ];
 
 const TEXT_REASONING_MODELS = [
@@ -163,7 +166,7 @@ Provide ONLY the translated and refined English prompt as your output.`;
   }, [imageConcept, imageStyle]);
 
   const generateUniversalImage = async (prompt: string, style: string, model: string, ratio: string) => {
-    if (model === 'gemini-3-pro-image-preview' || model === 'imagen-4.0-generate-001') {
+    if (model.includes('pro-image') || model.includes('imagen') || model.includes('3.1-flash-image')) {
       const hasKey = await (window as any).aistudio.hasSelectedApiKey();
       if (!hasKey) {
         alert('Please select a paid API key for this model generation.');
@@ -174,36 +177,65 @@ Provide ONLY the translated and refined English prompt as your output.`;
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const fullPrompt = `${prompt}${style !== "None" ? `, ${STYLE_DETAILS[style] || style}` : ""}`;
 
-    if (model === 'imagen-4.0-generate-001') {
-      const response = await ai.models.generateImages({
-        model: model,
-        prompt: fullPrompt,
-        config: {
-          numberOfImages: 1,
-          outputMimeType: 'image/png',
-          aspectRatio: ratio as any,
-        },
-      });
-      return `data:image/png;base64,${response.generatedImages[0].image.imageBytes}`;
-    } else {
-      const response = await ai.models.generateContent({
-        model: model,
-        contents: {
-          parts: [{ text: fullPrompt }],
-        },
-        config: {
-          imageConfig: {
+    if (model.includes('imagen')) {
+      try {
+        const response = await ai.models.generateImages({
+          model: model,
+          prompt: fullPrompt,
+          config: {
+            numberOfImages: 1,
+            outputMimeType: 'image/png',
             aspectRatio: ratio as any,
-            ...(model === 'gemini-3-pro-image-preview' ? { imageSize: "1K" } : {})
           },
-        },
-      });
+        });
+        return `data:image/png;base64,${response.generatedImages[0].image.imageBytes}`;
+      } catch (error: any) {
+        console.warn("Error with aspectRatio in generateImages, retrying without it:", error);
+        const fallbackResponse = await ai.models.generateImages({
+          model: model,
+          prompt: fullPrompt,
+          config: {
+            numberOfImages: 1,
+            outputMimeType: 'image/png',
+          },
+        });
+        return `data:image/png;base64,${fallbackResponse.generatedImages[0].image.imageBytes}`;
+      }
+    } else {
+      try {
+        const response = await ai.models.generateContent({
+          model: model,
+          contents: {
+            parts: [{ text: fullPrompt }],
+          },
+          config: {
+            imageConfig: {
+              aspectRatio: ratio as any,
+              ...(model.includes('pro-image') || model.includes('3.1-flash-image') ? { imageSize: "1K" } : {})
+            },
+          },
+        });
 
-      const imagePart = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
-      if (imagePart?.inlineData?.data) {
-        return `data:image/png;base64,${imagePart.inlineData.data}`;
-      } else {
-        throw new Error('No image data found in response');
+        const imagePart = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
+        if (imagePart?.inlineData?.data) {
+          return `data:image/png;base64,${imagePart.inlineData.data}`;
+        } else {
+          throw new Error('No image data found in response');
+        }
+      } catch (error: any) {
+        console.warn("Error with imageConfig, retrying without it:", error);
+        const fallbackResponse = await ai.models.generateContent({
+          model: model,
+          contents: {
+            parts: [{ text: fullPrompt }],
+          }
+        });
+        const imagePart = fallbackResponse.candidates?.[0]?.content?.parts.find(p => p.inlineData);
+        if (imagePart?.inlineData?.data) {
+          return `data:image/png;base64,${imagePart.inlineData.data}`;
+        } else {
+          throw new Error('No image data found in fallback response');
+        }
       }
     }
   };
