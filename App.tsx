@@ -167,9 +167,9 @@ const App: React.FC = () => {
       if (result) {
         setImageConcept(result.trim());
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating Thai concept:', error);
-      alert('Failed to generate concept. Please check your API key and try again.');
+      alert(`Failed to generate concept. Please check your API key and try again. Error: ${error?.message || 'Unknown error'}`);
     } finally {
       setIsGeneratingThai(false);
     }
@@ -215,9 +215,9 @@ Provide ONLY the translated and refined English prompt as your output.`;
       if (result) {
         setImageConceptEnglish(result.trim());
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error translating to English:', error);
-      alert('Failed to translate concept. Please try again.');
+      alert(`Failed to translate concept. Please try again. Error: ${error?.message || 'Unknown error'}`);
     } finally {
       setIsTranslating(false);
     }
@@ -400,9 +400,9 @@ FORMAT YOUR RESPONSE AS JSON:
       if (result.videoPrompt) {
         setVideoPrompt(result.videoPrompt.trim());
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating video prompt:', error);
-      alert('Failed to create video prompt. Please check your API key and try again.');
+      alert(`Failed to create video prompt. Please check your API key and try again. Error: ${error?.message || 'Unknown error'}`);
     } finally {
       setIsCreatingVideoPrompt(false);
     }
